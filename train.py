@@ -79,7 +79,7 @@ def parse_args():
     p = argparse.ArgumentParser(description="Tiny training loop demo")
     p.add_argument("--model", default="distilbert-base-uncased", help="pretrained model")
     p.add_argument("--epochs", type=int, default=1)
-    p.add_argument("--batch-size", type=int, default=2)
+    p.add_argument("--batch-size", "--batch_size", dest="batch_size", type=int, default=2)
     p.add_argument("--lr", type=float, default=5e-5)
     p.add_argument("--save-dir", default="./model")
     return p.parse_args()
