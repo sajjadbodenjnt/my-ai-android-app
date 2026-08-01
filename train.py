@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Lightweight medical Q&A fine-tune example using a small seq2seq model.
-- Uses google/flan-t5-small to fine-tune on a tiny in-script medical Q&A dataset.
+- Uses facebook/bart-base to fine-tune on a tiny in-script medical Q&A dataset (no sentencepiece required).
 - Designed to run on CPU (small data, few epochs) for demonstration.
 
 Usage (example):
@@ -22,7 +22,7 @@ from transformers import (
     DataCollatorForSeq2Seq,
 )
 
-MODEL_NAME = "google/flan-t5-small"  # small, CPU-friendly seq2seq model
+MODEL_NAME = "facebook/bart-base"  # uses BART tokenizer (no sentencepiece)
 
 SAMPLE_DATA = [
     {

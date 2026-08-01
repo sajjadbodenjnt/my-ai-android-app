@@ -3,6 +3,5 @@
 torch
 transformers>=4.30.0
 datasets
-sentencepiece
 accelerate
 tqdm
