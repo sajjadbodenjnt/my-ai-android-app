@@ -41,4 +41,5 @@ jobs:
         with:
           name: training-outputs
           path: |
+            model/**
             outputs/**
