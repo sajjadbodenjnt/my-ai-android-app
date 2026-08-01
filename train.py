@@ -105,7 +105,6 @@ def train(
 
     training_args = TrainingArguments(
         output_dir=save_dir,
-        overwrite_output_dir=True,
         num_train_epochs=epochs,
         per_device_train_batch_size=batch_size,
         learning_rate=lr,
