@@ -1,74 +1,129 @@
 #!/usr/bin/env python3
 """
-Lightweight dummy training script using Hugging Face transformers (DistilBERT).
-Small in-memory dataset; runs on CPU; no heavy preprocessing.
+Train a small Bengali causal LM chatbot using gpt2 (Hugging Face Transformers).
+- Loads gpt2 with AutoTokenizer and AutoModelForCausalLM
+- Sets tokenizer.pad_token = tokenizer.eos_token
+- Uses a tiny in-memory Bengali Q&A dataset (raw_data)
+- Uses DataCollatorForLanguageModeling(mlm=False) for generative training
+- Saves final model and tokenizer to ./model
+This script is intentionally small and CPU-friendly for demo purposes.
 """
 
 import argparse
 import os
+from typing import List
+
 import torch
-from torch.utils.data import Dataset, DataLoader
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from torch.utils.data import Dataset
+from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    DataCollatorForLanguageModeling,
+    Trainer,
+    TrainingArguments,
+)
 
 
-class DummyDataset(Dataset):
-    def __init__(self, texts, labels):
+class BengaliQADataset(Dataset):
+    """Simple Dataset that returns tokenized examples for causal LM training."""
+
+    def __init__(self, texts: List[str], tokenizer: AutoTokenizer, max_length: int = 512):
         self.texts = texts
-        self.labels = labels
+        self.tokenizer = tokenizer
+        self.max_length = max_length
 
     def __len__(self):
         return len(self.texts)
 
     def __getitem__(self, idx):
-        return {"text": self.texts[idx], "label": self.labels[idx]}
+        enc = self.tokenizer(
+            self.texts[idx],
+            truncation=True,
+            max_length=self.max_length,
+            return_attention_mask=True,
+        )
+        # Return input_ids and attention_mask (Trainer + data_collator will handle padding)
+        return {k: torch.tensor(v) for k, v in enc.items()}
 
 
-def collate_fn(batch, tokenizer):
-    texts = [b["text"] for b in batch]
-    labels = torch.tensor([b["label"] for b in batch], dtype=torch.long)
-    enc = tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
-    enc["labels"] = labels
-    return enc
+def build_texts_from_raw(raw_data):
+    # Format as a prompt-response pair. Keep simple: 'Q: <question>\nA: <answer>\n'
+    texts = []
+    for qa in raw_data:
+        q = qa.get("question", "")
+        a = qa.get("answer", "")
+        texts.append(f"Q: {q}\nA: {a}\n")
+    return texts
 
 
-def train(model_name: str, epochs: int = 1, batch_size: int = 2, lr: float = 5e-5, save_dir: str = "./model"):
+def train(
+    model_name: str = "gpt2",
+    epochs: int = 1,
+    batch_size: int = 2,
+    lr: float = 5e-5,
+    save_dir: str = "./model",
+):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+    # Ensure pad_token is defined for batching
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    model = AutoModelForCausalLM.from_pretrained(model_name)
     model.to(device)
 
-    # Very small dummy dataset
-    texts = [
-        "I love this product",
-        "This is the worst",
-        "Absolutely fantastic",
-        "I do not like it",
+    # Tiny sample Bengali Q&A dataset (raw_data)
+    raw_data = [
+        {
+            "question": "আপনি কেমন আছেন?",
+            "answer": "আমি ভালো আছি, আপনাকে কেমন লাগছে?",
+        },
+        {
+            "question": "বাংলাদেশের রাজধানী কোথায়?",
+            "answer": "ঢাকা বাংলাদেশের রাজধানী।",
+        },
+        {
+            "question": "বইয়ের সুপারিশ করবেন?",
+            "answer": "আপনি যদি উপন্যাস পছন্দ করেন, তবে 'পথের পাঁচালী' পড়তে পারেন।",
+        },
+        {
+            "question": "কীভাবে চা বানাবো?",
+            "answer": "পাতা দিয়ে চা বানাতে হবে; প্রথমে জল গরম করে চা পাতা দিন এবং কিছুক্ষণ নামিয়ে নিন।",
+        },
     ]
-    labels = [1, 0, 1, 0]
 
-    ds = DummyDataset(texts, labels)
-    loader = DataLoader(ds, batch_size=batch_size, shuffle=True, collate_fn=lambda b: collate_fn(b, tokenizer))
+    texts = build_texts_from_raw(raw_data)
 
-    optim = torch.optim.AdamW(model.parameters(), lr=lr)
+    dataset = BengaliQADataset(texts, tokenizer)
 
-    model.train()
-    for epoch in range(epochs):
-        total_loss = 0.0
-        for step, batch in enumerate(loader):
-            batch = {k: v.to(device) for k, v in batch.items()}
-            outputs = model(**batch)
-            loss = outputs.loss
-            loss.backward()
-            optim.step()
-            optim.zero_grad()
-            total_loss += loss.item()
-            print(f"Epoch {epoch+1} step {step+1} loss {loss.item():.4f}")
-        avg = total_loss / (step + 1)
-        print(f"Epoch {epoch+1} finished. avg loss {avg:.4f}")
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer,
+        mlm=False,  # causal language modeling
+    )
 
-    # Save a tiny checkpoint
+    training_args = TrainingArguments(
+        output_dir=save_dir,
+        overwrite_output_dir=True,
+        num_train_epochs=epochs,
+        per_device_train_batch_size=batch_size,
+        learning_rate=lr,
+        save_strategy="epoch",
+        logging_steps=10,
+        fp16=False,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=dataset,
+        data_collator=data_collator,
+    )
+
+    trainer.train()
+
+    # Save final model and tokenizer to ./model
     os.makedirs(save_dir, exist_ok=True)
     model.save_pretrained(save_dir)
     tokenizer.save_pretrained(save_dir)
@@ -76,8 +131,8 @@ def train(model_name: str, epochs: int = 1, batch_size: int = 2, lr: float = 5e-
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Tiny training loop demo")
-    p.add_argument("--model", default="distilbert-base-uncased", help="pretrained model")
+    p = argparse.ArgumentParser(description="Train a tiny Bengali causal LM (gpt2) for demo purposes")
+    p.add_argument("--model", default="gpt2", help="pretrained model name or path (default: gpt2)")
     p.add_argument("--epochs", type=int, default=1)
     p.add_argument("--batch-size", "--batch_size", dest="batch_size", type=int, default=2)
     p.add_argument("--lr", type=float, default=5e-5)
@@ -87,4 +142,10 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    train(model_name=args.model, epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, save_dir=args.save_dir)
+    train(
+        model_name=args.model,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        save_dir=args.save_dir,
+    )
