@@ -1,0 +1,8 @@
+# Minimal requirements for CPU-based fine-tuning demo
+# Note: GitHub Actions workflow installs CPU PyTorch wheel explicitly before pip install -r requirements.txt
+torch
+transformers>=4.30.0
+datasets
+sentencepiece
+accelerate
+tqdm

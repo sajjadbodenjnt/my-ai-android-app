@@ -1,0 +1,44 @@
+name: Medical Q&A Training (CPU-ready)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install CPU PyTorch wheel
+        run: |
+          # Install CPU-only PyTorch, torchvision and torchaudio from official PyTorch index
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision torchaudio --extra-index-url https://pypi.org/simple --no-cache-dir
+
+      - name: Install Python requirements
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; else echo "No requirements.txt found"; fi
+
+      - name: Run training script
+        run: |
+          python train.py --epochs 3 --batch_size 2
+        env:
+          HF_HOME: ${{ runner.temp }}/hf_cache
+
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-outputs
+          path: |
+            outputs/**
