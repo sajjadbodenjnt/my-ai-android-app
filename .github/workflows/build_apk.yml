@@ -68,6 +68,11 @@ jobs:
           mkdir -p "$HOME/.buildozer/android/platform"
           rm -rf "$HOME/.buildozer/android/platform/android-sdk" || true
           ln -s "$RUNNER_TEMP/android-sdk" "$HOME/.buildozer/android/platform/android-sdk"
+          # Create legacy tools/bin path expected by older buildozer/p4a and symlink sdkmanager
+          mkdir -p "$HOME/.buildozer/android/platform/android-sdk/tools/bin"
+          if [ -x "$RUNNER_TEMP/android-sdk/cmdline-tools/latest/bin/sdkmanager" ]; then
+            ln -sf "$RUNNER_TEMP/android-sdk/cmdline-tools/latest/bin/sdkmanager" "$HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager"
+          fi
 
       - name: Build APK with buildozer
         run: |
