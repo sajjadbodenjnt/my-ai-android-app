@@ -62,14 +62,13 @@ jobs:
           python3 -m pip install --user buildozer cython
           echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
-      - name: Build APK with buildozer (x86_64 runner)
-        uses: kivy/buildozer-action@v1
-        with:
-          python-version: '3.10'
-          target: 'android'
-          apk: true
-          extra_args: |
-            --verbose
+      - name: Build APK with buildozer
+        run: |
+          set -eux
+          export ANDROID_HOME="$RUNNER_TEMP/android-sdk"
+          export ANDROID_SDK_ROOT="$RUNNER_TEMP/android-sdk"
+          export PATH="$HOME/.local/bin:$PATH"
+          buildozer -v android debug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
