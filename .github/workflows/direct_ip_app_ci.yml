@@ -1,0 +1,58 @@
+name: Direct IP App CI
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y portaudio19-dev python3-pyaudio
+
+      - name: Upgrade pip and install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyaudio pyinstaller
+
+      - name: Syntax check direct_ip_call.py
+        run: |
+          python -m py_compile direct_ip_call.py
+
+      - name: Socket bind test (UDP)
+        run: |
+          python - <<'PY'
+import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+try:
+    s.bind(("0.0.0.0", 0))
+    print("Socket bind successful")
+finally:
+    s.close()
+PY
+
+      - name: Build standalone executable with PyInstaller
+        run: |
+          pyinstaller --onefile direct_ip_call.py
+
+      - name: List built files
+        run: ls -la dist || true
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: direct-ip-executable
+          path: dist/*
