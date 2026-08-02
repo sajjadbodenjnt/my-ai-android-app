@@ -62,6 +62,13 @@ jobs:
           python3 -m pip install --user buildozer cython
           echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
+      - name: Link SDK to buildozer path
+        run: |
+          set -eux
+          mkdir -p "$HOME/.buildozer/android/platform"
+          rm -rf "$HOME/.buildozer/android/platform/android-sdk" || true
+          ln -s "$RUNNER_TEMP/android-sdk" "$HOME/.buildozer/android/platform/android-sdk"
+
       - name: Build APK with buildozer
         run: |
           set -eux
