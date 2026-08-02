@@ -19,26 +19,30 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Prepare log dir
+        run: |
+          mkdir -p build_logs
+
       - name: Install system dependencies (portaudio and build tools)
         run: |
           set -eux
-          sudo apt-get update
-          sudo apt-get install -y portaudio19-dev libportaudio2 build-essential gcc python3-dev libsndfile1-dev libasound2-dev
+          sudo apt-get update 2>&1 | tee build_logs/apt_update.log
+          sudo apt-get install -y portaudio19-dev libportaudio2 build-essential gcc python3-dev libsndfile1-dev libasound2-dev 2>&1 | tee build_logs/apt_install.log
           apt-cache policy portaudio19-dev || true
 
       - name: Upgrade pip and install Python deps
         run: |
           set -eux
-          python -m pip install --upgrade pip setuptools wheel
-          pip install --no-cache-dir pyaudio pyinstaller
+          python -m pip install --upgrade pip setuptools wheel 2>&1 | tee build_logs/pip_upgrade.log
+          pip install --no-cache-dir pyaudio pyinstaller 2>&1 | tee build_logs/pip_install.log || true
 
       - name: Syntax check direct_ip_call.py
         run: |
-          python -m py_compile direct_ip_call.py
+          python -m py_compile direct_ip_call.py 2>&1 | tee build_logs/syntax_check.log
 
       - name: Socket bind test (UDP)
         run: |
-          python - <<'PY'
+          python - <<'PY' 2>&1 | tee build_logs/socket_test.log
 import socket
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 try:
@@ -50,12 +54,21 @@ PY
 
       - name: Build standalone executable with PyInstaller
         run: |
-          pyinstaller --onefile direct_ip_call.py
+          set -eux
+          pyinstaller --onefile direct_ip_call.py 2>&1 | tee build_logs/pyinstaller.log || true
 
       - name: List built files
         run: ls -la dist || true
 
-      - name: Upload executable artifact
+      - name: Upload build logs artifact (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: direct-ip-build-logs
+          path: build_logs/**
+
+      - name: Upload executable artifact (if present)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: direct-ip-executable
