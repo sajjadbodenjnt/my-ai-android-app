@@ -9,10 +9,6 @@ jobs:
   build-apk:
     runs-on: ubuntu-latest
 
-    env:
-      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
-      ANDROID_HOME: ${{ runner.temp }}/android-sdk
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,11 +25,17 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
+      - name: Configure Android SDK env
+        run: |
+          echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$RUNNER_TEMP/android-sdk" >> $GITHUB_ENV
+
       - name: Install Android SDK command-line tools and platform/build-tools
         run: |
           set -eux
-          mkdir -p "$ANDROID_SDK_ROOT"
-          cd "$ANDROID_SDK_ROOT"
+          SDK_DIR="$RUNNER_TEMP/android-sdk"
+          mkdir -p "$SDK_DIR"
+          cd "$SDK_DIR"
           # Download latest commandline tools (version number stable as of 2024; if it changes update URL)
           CLI_ZIP="commandlinetools-linux-9477386_latest.zip"
           wget -q "https://dl.google.com/android/repository/${CLI_ZIP}" -O cmdline-tools.zip
@@ -41,16 +43,17 @@ jobs:
           # place in expected path
           mkdir -p cmdline-tools/latest
           mv cmdline-tools/cmdline-tools/* cmdline-tools/latest/ || true
-          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
-          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
-          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-33" "build-tools;33.0.0"
+          export PATH="$SDK_DIR/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --sdk_root="$SDK_DIR" --licenses || true
+          sdkmanager --sdk_root="$SDK_DIR" "platform-tools" "platforms;android-33" "build-tools;33.0.0"
 
       - name: Verify Android tools
         run: |
           set -eux
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          ls -la "$ANDROID_SDK_ROOT"
-          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list --sdk_root="$ANDROID_SDK_ROOT"
+          SDK_DIR="$RUNNER_TEMP/android-sdk"
+          echo "SDK_DIR=$SDK_DIR"
+          ls -la "$SDK_DIR"
+          $SDK_DIR/cmdline-tools/latest/bin/sdkmanager --list --sdk_root="$SDK_DIR"
 
       - name: Install pip deps for build
         run: |
@@ -67,9 +70,6 @@ jobs:
           apk: true
           extra_args: |
             --verbose
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
