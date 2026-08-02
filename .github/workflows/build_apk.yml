@@ -13,6 +13,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install system build dependencies
+        run: |
+          set -eux
+          sudo apt-get update
+          sudo apt-get install -y python3-pip build-essential git zip unzip openjdk-11-jdk zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libjpeg-dev libfreetype6-dev libgl1-mesa-dev libgles2-mesa-dev libx11-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev libglu1-mesa-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
