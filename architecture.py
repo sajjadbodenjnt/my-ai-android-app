@@ -7,8 +7,32 @@ This is intentionally small for CI/test purposes. Do NOT use directly for clinic
 
 from typing import Optional, List
 import re
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+    TORCH_AVAILABLE = True
+except Exception:
+    torch = None
+    TORCH_AVAILABLE = False
+    # Minimal nn stub to allow imports and class definitions during tests without real torch
+    class _nn:
+        class Module:
+            pass
+        class Embedding:
+            def __init__(self, *a, **k):
+                pass
+        class LayerNorm:
+            def __init__(self, *a, **k):
+                pass
+        class Linear:
+            def __init__(self, *a, **k):
+                pass
+        class TransformerEncoderLayer:
+            def __init__(self, *a, **k):
+                pass
+        class ModuleList(list):
+            pass
+    nn = _nn
 import math
 
 
