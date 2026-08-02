@@ -17,7 +17,7 @@ requirements = python3,kivy,pyjnius
 orientation = portrait
 
 # (list) Permissions
-android.permissions = RECORD_AUDIO, INTERNET, ACCESS_WIFI_STATE, CHANGE_WIFI_STATE
+android.permissions = RECORD_AUDIO, INTERNET, ACCESS_WIFI_STATE, CHANGE_WIFI_STATE, MODIFY_AUDIO_SETTINGS, CAMERA, android.permission.HIGH_PRIORITY_BACKGROUND_WORK
 
 # (int) Target API
 android.api = 33
