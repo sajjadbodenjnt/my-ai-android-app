@@ -19,11 +19,11 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install system dependencies (portaudio)
+      - name: Install system dependencies (portaudio and build tools)
         run: |
           set -eux
           sudo apt-get update
-          sudo apt-get install -y portaudio19-dev libportaudio2
+          sudo apt-get install -y portaudio19-dev libportaudio2 build-essential gcc python3-dev libsndfile1-dev libasound2-dev
           apt-cache policy portaudio19-dev || true
 
       - name: Upgrade pip and install Python deps
