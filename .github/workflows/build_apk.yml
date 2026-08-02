@@ -17,7 +17,7 @@ jobs:
         run: |
           set -eux
           sudo apt-get update
-          sudo apt-get install -y python3-pip build-essential git zip unzip wget tar openjdk-11-jdk zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libjpeg-dev libfreetype6-dev libgl1-mesa-dev libgles2-mesa-dev libx11-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev libglu1-mesa-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good autoconf automake libtool m4 pkg-config gettext libtool-bin
+          sudo apt-get install -y python3-pip build-essential git zip unzip wget tar openjdk-11-jdk zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libjpeg-dev libfreetype6-dev libgl1-mesa-dev libgles2-mesa-dev libx11-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev libglu1-mesa-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good autoconf automake libtool m4 pkg-config gettext autoconf-archive libtool-bin
 
       - name: Set up JDK
         uses: actions/setup-java@v4
