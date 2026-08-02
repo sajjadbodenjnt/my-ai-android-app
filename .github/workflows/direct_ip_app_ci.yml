@@ -6,11 +6,27 @@ on:
     branches: [ main ]
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug runner environment
+        run: |
+          echo "---- DEBUG START ----"
+          id
+          whoami
+          uname -a
+          pwd
+          ls -la
+          env | sed -n '1,200p'
+          echo "---- DEBUG END ----"
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
