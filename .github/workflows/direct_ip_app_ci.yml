@@ -37,6 +37,23 @@ jobs:
           sleep 30
           echo "Runner sleep finished at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 
+      - name: Create and upload runner diagnostic artifact
+        run: |
+          mkdir -p diagnostics
+          echo "Run diagnostics at $(date -u +'%Y-%m-%dT%H:%M:%SZ')" > diagnostics/diag.txt
+          echo "Hostname: $(hostname)" >> diagnostics/diag.txt
+          echo "Uname: $(uname -a)" >> diagnostics/diag.txt
+          echo "Python: $(python -V 2>&1)" >> diagnostics/diag.txt
+          echo "Working dir: $(pwd)" >> diagnostics/diag.txt
+          env | sort >> diagnostics/env.txt
+        shell: bash
+
+      - name: Upload runner diagnostic artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: runner-diagnostic
+          path: diagnostics/**
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
