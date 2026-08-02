@@ -1,0 +1,56 @@
+name: CI Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.10]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libsndfile1 ffmpeg
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || true
+          pip install torch transformers sentence-transformers biopython pytest || true
+
+      - name: Run tests
+        run: |
+          pytest -q
+
+      - name: Package (wheel)
+        run: |
+          python -m pip install build
+          python -m build || true
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: system-artifacts
+          path: |
+            dist
+            .github/workflows/deploy.yml
+
+      - name: Notify
+        run: echo "CI finished. If tests passed, further deploy steps should be run manually."
+
+# Note: This workflow is intentionally conservative. Deploy to production requires manual sign-off and clinical review.
